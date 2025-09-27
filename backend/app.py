@@ -13,6 +13,10 @@ from .src.summarizer import search_pubmed
 from .src.summarizer import get_structured_summaries
 from .src.summarizer import fetch_abstract
 from .src.summarizer import summarize_structured
+from .src.summarizer import conditions_to_string
+from .src.summarizer import observations_to_string
+from .src.summarizer import summarize_patient_info
+from datetime import date
 
 app = Flask(__name__)
 
@@ -72,6 +76,93 @@ def parse_input():
 
     structured_output = parse_user_input(raw_input)
     return jsonify({"structured_data": structured_output})
+   
+def get_patient_records(patient_id, first_name=None, last_name=None):
+    cursor = connection.cursor()
+
+    # Base query (patient_id required)
+    query = "SELECT id, first_name, last_name, gender, birth_date, deceased FROM patients WHERE id = %s"
+    params = [patient_id]
+
+    if first_name:
+        query += " AND first_name = %s"
+        params.append(first_name)
+    if last_name:
+        query += " AND last_name = %s"
+        params.append(last_name)
+
+    cursor.execute(query, tuple(params))
+    patient = cursor.fetchone()
+    if not patient:
+        return None
+
+    # Calculate age
+    birth_date = patient[4]
+    age = None
+    if birth_date:
+        today = date.today()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+    # Fetch conditions
+    cursor.execute(
+        "SELECT id, code, onset, abatement FROM conditions WHERE patient_id = %s",
+        (patient_id,)
+    )
+    conditions = cursor.fetchall()
+    conditions_list = [
+        {
+            "id": str(c[0]),
+            "code": str(c[1]),
+            "onset": str(c[2]) if c[2] else None,
+            "abatement": str(c[3]) if c[3] else None
+        } for c in conditions
+    ]
+
+    # Fetch observations
+    cursor.execute(
+        "SELECT id, code, value, unit, date FROM observations WHERE patient_id = %s",
+        (patient_id,)
+    )
+    observations = cursor.fetchall()
+    observations_list = [
+        {
+            "id": str(o[0]),
+            "code": str(o[1]),
+            "value": str(o[2]) if o[2] is not None else None,
+            "unit": str(o[3]) if o[3] is not None else None,
+            "date": str(o[4]) if o[4] else None
+        } for o in observations
+    ]
+
+    return {
+        "id": str(patient[0]),
+        "first_name": str(patient[1]),
+        "last_name": str(patient[2]),
+        "gender": str(patient[3]) if patient[3] else "unknown",
+        "age": age,
+        "deceased": patient[5],
+        "conditions": conditions_list,
+        "observations": observations_list
+    }
+
+
+
+@app.route("/patient_summary/<patient_id>", methods=["GET"])
+def patient_summary(patient_id):
+    first_name = request.args.get("first_name")
+    last_name = request.args.get("last_name")
+
+    records = get_patient_records(patient_id, first_name, last_name)
+    if not records:
+        return jsonify({"error": "Patient not found"}), 404
+
+    summary = summarize_patient_info(records)
+
+    return jsonify({
+        # "patient_records": records,
+        "summary": summary
+    })
+
 
 
 
