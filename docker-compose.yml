@@ -5,7 +5,8 @@ services:
     environment:
       POSTGRES_DB: data
       POSTGRES_USER: username
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: password      
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - 5432:5432
     volumes:
