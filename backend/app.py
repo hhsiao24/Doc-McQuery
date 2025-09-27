@@ -61,34 +61,6 @@ def parse_user_input(raw_input):
     except Exception as e:
         return {"error": str(e)}
     
-@app.route("/all_requests", methods=["POST"])
-def all_requests():
-    """
-    Main request to get all data
-    """
-    data = request.json
-    patient_id = data.get("patient_id")
-    patient_info = data.get("patient_info")
-
-    patient_info = parse_input(patient_info)
-
-    # add valerias data
-
-    # ritika's stuff
-    
-    case_study = search_patient(patient_info)
-
-    return jsonify({
-        "case_study": case_study
-    })
-
-    
-@app.route("/parse_input", methods=["POST"])
-def parse_input_route():
-    data = request.json
-    raw_input = data.get("input")
-    return parse_input(raw_input)
-
 
 @app.route("/all_requests", methods=["POST"])
 def all_requests():
@@ -99,13 +71,22 @@ def all_requests():
     patient_id = data.get("patient_id")
     patient_info = data.get("patient_info")
 
-    patient_info = parse_input(patient_info)
+    parsed_info = parse_input(patient_info)
 
-    # add valerias data
+    # Step 2: fetch patient EMR from DB and summarize EMR
+    patient_records = get_patient_records(patient_id)  
+    summary_info = summarize_patient_info(patient_records)
 
-    # ritika's stuff
+    # Step 4: combine parsed input and summary into one query context
+    combined_info = {
+        "parsed_input": parsed_info,
+        "emr_summary": summary_info
+    }
 
-    case_study = search_patient(patient_info)
+    case_study = search_patient(combined_info)
+
+    print(case_study)
+    print(type(case_study), flush=True)
 
     return jsonify({"case_study": case_study})
 
@@ -138,13 +119,6 @@ def summarize():
     return jsonify(results)
 
 
-# @app.route("/search-patient", methods=["POST"])
-# def search_patient_request():
-#     data = request.json
-#     patient = data.get("patient", {})
-#     return search_patient(patient)
-
-
 # use inputs to generate a query and call methods to create the summary
 def search_patient(patient):
     if not patient:
@@ -172,7 +146,7 @@ def search_patient(patient):
     if not tier_with_results:
         return jsonify({"error": "No results found"}), 404
 
-    # Step 2 — Call OpenAI for the first tier with results
+    # Step 2 — Call OpenAI for the first tier with results to summarize 
     summaries = []
     for pubmed_id in ids:
         abstract = fetch_abstract(pubmed_id)
