@@ -10,6 +10,7 @@ services:
       - 5432:5432
     volumes:
       - ./db/:/var/lib/postgresql/data
+      - ./initdb/:/docker-entrypoint-initdb.d/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U username -d data"]
       interval: 5s
@@ -23,7 +24,6 @@ services:
       - "5001:5000"
     volumes:
       - ./backend/:/usr/src/app
-      - ./initdb/:/docker-entrypoint-initdb.d/
     depends_on:
       db:
         condition: service_healthy
