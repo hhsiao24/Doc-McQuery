@@ -34,12 +34,16 @@ def split_symptoms(input:str) -> list[str]:
     Split the INPUT into a list of individual symptom phrases.
 
     RULES:
-    - Preserve the original wording
-    - Do NOT add or remove information. Do NOT add synonyms.
-    - Keep negations with the symptom (e.g., "no fever" stays as one item).
-    - If the input begins with a leading verb like "has", "has a", "reports", etc., and it directly attaches to the first symptom, include it in the first item (e.g., "has bloody urine").
-    - Consider separators such as commas, semicolons, slashes, pipes, line breaks, and coordinator words like "and", "with". If none are present, infer minimal, natural symptom phrase boundaries.
-    - Output MUST be ONLY a valid JSON array of strings (no prose, no markdown, no trailing commas).
+    - Preserve the original wording exactly; do NOT correct typos or rephrase.
+    - Do NOT add or remove relevant information. Do NOT add symptoms not present.
+    - Each output item MUST be an exact substring of the INPUT (case and spacing preserved).
+    - Include both symptom complaints and disease/diagnosis terms if present (e.g., "diarrhea", "cancer").
+    - Keep negations with the phrase (e.g., "no fever").
+    - Accept full sentences and free text; ignore non-clinical content (greetings, names, roles, pets, places, chit-chat).
+    - If the input begins with a leading verb like "has", "has a", "reports", etc., and it directly attaches to the first symptom, include it with the first item (e.g., "has bloody urine").
+    - Consider separators such as commas, semicolons, slashes, pipes, line breaks, and words like "and", "with". If none are present, infer minimal, natural symptom boundaries.
+    - If there are no valid symptom/diagnosis phrases, return [].
+    - Output MUST be ONLY a valid JSON array of strings (no prose, no markdown).
 
     INPUT:
     \"\"\"{input}\"\"\"
