@@ -23,6 +23,7 @@ services:
       - "5001:5000"
     volumes:
       - ./backend/:/usr/src/app
+      - ./initdb/:/docker-entrypoint-initdb.d/
     depends_on:
       db:
         condition: service_healthy

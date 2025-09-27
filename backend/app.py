@@ -16,7 +16,7 @@ from .src.summarizer import summarize_structured
 
 app = Flask(__name__)
 
-db = DbInitializer()
+db = Database()
 connection = db.get_connection()
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
