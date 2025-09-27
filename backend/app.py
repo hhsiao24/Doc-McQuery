@@ -276,12 +276,35 @@ def patient_summary(patient_id):
 
     summary = summarize_patient_info(records)
 
-    return jsonify(
-        {
-            # "patient_records": records,
-            "summary": summary
-        }
-    )
+    return jsonify({
+        # "patient_records": records,
+        "summary": summary
+    })
+# --------------------------
+# Route to get all patients for dropdown
+# --------------------------
+@app.route("/patients_list", methods=["GET"])
+def patients_list():
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT id, first_name, last_name FROM patients ORDER BY last_name, first_name;")
+        rows = cursor.fetchall()
+
+        patients = [
+            {
+                "id": str(row[0]),
+                "first_name": str(row[1]),
+                "last_name": str(row[2])
+            } for row in rows
+        ]
+
+        return jsonify(patients)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 
 @app.route("/health")
