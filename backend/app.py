@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 
-from .config.db import DbInitializer
+from .src.db import Database
 from .src.summarizer import search_pubmed
 from .src.summarizer import get_structured_summaries
 from .src.summarizer import fetch_abstract
