@@ -38,8 +38,8 @@ export const ComboBox = ({ options, onSelect, placeholder }: ComboBoxProps) => {
           className="w-[200px] justify-between"
         >
           {selected?.label ?? placeholder ?? "Select option..."}
+          <ChevronsUpDown className="opacity-50" />
         </Button>
-        <ChevronsUpDown className="opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>

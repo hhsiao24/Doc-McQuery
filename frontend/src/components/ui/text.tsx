@@ -15,11 +15,11 @@ export const Text = ({
   const sizeClasses: Record<NonNullable<TextProps["size"]>, string> = {
     t1: "text-[72px] font-[Sedan] text-[#86A9C1]",
     t2: "text-[28px] font-[Sedan_SC] text-[#D5E5EF]",
-    h1: "text-[32px] font-bold font-[inter]",
-    h2: "text-[28px] font-bold font-[inter]",
-    h3: "text-[24px] font-medium font-[inter]",
-    p: "text-[20px] font-normal font-[inter]",
-    c: "text-[16px] font-normal font-[inter]",
+    h1: "text-[32px] font-[inter]",
+    h2: "text-[28px] font-[inter]",
+    h3: "text-[20px] font-light font-[inter]",
+    p: "text-[16px] font-[inter]",
+    c: "text-[12px] font-[inter]",
   };
 
   return (
