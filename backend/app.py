@@ -52,16 +52,40 @@ def parse_user_input(raw_input):
     except Exception as e:
         return {"error": str(e)}
     
+@app.route("/all_requests", methods=["POST"])
+def all_requests():
+    """
+    Main request to get all data
+    """
+    data = request.json
+    patient_id = data.get("patient_id")
+    patient_info = data.get("patient_info")
+
+    patient_info = parse_input(patient_info)
+
+    # add valerias data
+
+    # ritika's stuff
+    
+    case_study = search_patient(patient_info)
+
+    return jsonify({
+        "case_study": case_study
+    })
+
+    
 @app.route("/parse_input", methods=["POST"])
-def parse_input():
+def parse_input_route():
     data = request.json
     raw_input = data.get("input")
+    return parse_input(raw_input)
 
+def parse_input(raw_input: str):
     if not raw_input:
         return jsonify({"error": "input is required"}), 400
 
-    structured_output = parse_user_input(raw_input)
-    return jsonify({"structured_data": structured_output})
+    structured_output = json.loads(parse_user_input(raw_input))
+    return structured_output
 
 # test method to summarize pub med articles 
 @app.route("/summarize", methods=["POST"])
@@ -76,12 +100,14 @@ def summarize():
     return jsonify(results)
 
 
-# use inputs to generate a query and create the summary
-@app.route("/search-patient", methods=["POST"])
-def search_patient():
-    data = request.json
-    patient = data.get("patient", {})
+# @app.route("/search-patient", methods=["POST"])
+# def search_patient_request():
+#     data = request.json
+#     patient = data.get("patient", {})
+#     return search_patient(patient)
 
+# use inputs to generate a query and call methods to create the summary
+def search_patient(patient):
     if not patient:
         return jsonify({"error": "Patient data is required"}), 400
 
@@ -128,10 +154,10 @@ def search_patient():
         }
     }
 
-    return jsonify({
+    return {
         "patient": patient,
         "results": results
-    })
+    }
 
 
 @app.route("/health")
