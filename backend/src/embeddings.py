@@ -97,6 +97,14 @@ def generate_patient_embedding(patient: Patient) -> list[float]:
 
 def generate_observation_embedding(observation: Observation) -> list[float]:
     """Generate embedding for observation data"""
+    obs_text = observation_to_string(observation)
+
+    # Generate embedding
+    embedding = embedding_model.encode(obs_text)
+    return embedding.tolist()
+
+def observation_to_string(observation: Observation) -> str:
+    """Converts an Observation data type into a string"""
     # Create a text representation of observation data
     obs_text_parts = []
 
@@ -122,7 +130,4 @@ def generate_observation_embedding(observation: Observation) -> list[float]:
 
     # Combine all observation information
     obs_text = " | ".join(obs_text_parts) if obs_text_parts else "Unknown observation"
-
-    # Generate embedding
-    embedding = embedding_model.encode(obs_text)
-    return embedding.tolist()
+    return obs_text

@@ -6,6 +6,8 @@ from fhirclient.models.condition import Condition
 from fhirclient.models.fhirdatetime import FHIRDateTime
 from fhirclient.models.observation import Observation
 from fhirclient.models.patient import Patient
+from pgvector.psycopg2 import register_vector
+from pgvector.psycopg2.vector import Vector
 
 from .embeddings import (
     embedding_model,
@@ -57,6 +59,7 @@ class Database:
             host=self.host,
             port=self.port,
         )
+        register_vector(self.connection)
         self.cursor = self.connection.cursor()
 
         # Initialize tables if not exists
@@ -286,7 +289,46 @@ class Database:
         except Exception as e:
             print(f"Error finding similar patients: {e}")
             return []
+        
+    def find_similar_patients_from_list(
+        self,
+        target_patient_id: str,
+        candidate_patient_ids: list[str],
+        limit: int = 5,
+    ) -> list[tuple[str, float]]:
+        """
+        Rank the given candidate patients by pgvector similarity to the target patient.
+        Returns: [(patient_id, similarity), ...] in descending similarity.
+        """
+        try:
+            if not candidate_patient_ids:
+                return []
 
+            # Ensure target isn't in candidates
+            candidate_patient_ids = [pid for pid in candidate_patient_ids if pid != target_patient_id]
+            if not candidate_patient_ids:
+                return []
+
+            sql = """
+                SELECT
+                p2.id,
+                1 - (p1.embedding <=> p2.embedding) AS similarity
+                FROM patients p1
+                JOIN patients p2
+                ON p2.id = ANY(%s::text[])
+                WHERE p1.id = %s
+                AND p2.id <> p1.id
+                AND p1.embedding IS NOT NULL
+                AND p2.embedding IS NOT NULL
+                ORDER BY p1.embedding <=> p2.embedding
+                LIMIT %s
+            """
+            self.cursor.execute(sql, (candidate_patient_ids, target_patient_id, limit))
+            return self.cursor.fetchall()  # -> [(id, similarity), ...]
+        except Exception as e:
+            print(f"Error finding similar patients from list: {e}")
+            return []
+            
     def find_similar_observations(
         self, observation_text: str, limit: int = 5
     ) -> list[tuple[str, str, float]]:
@@ -294,18 +336,20 @@ class Database:
         try:
             # Generate embedding for the query text
             query_embedding = embedding_model.encode(observation_text).tolist()
+            vect = Vector(query_embedding)
 
             self.cursor.execute(
                 """
-                SELECT id, code, 1 - (embedding <=> %s) as similarity
+                SELECT patient_id, code, 1 - (embedding <=> %s) as similarity
                 FROM observations
                 WHERE embedding IS NOT NULL
                 ORDER BY embedding <=> %s
                 LIMIT %s
                 """,
-                (query_embedding, query_embedding, limit),
+                (vect, vect, limit),
             )
             return self.cursor.fetchall()
         except Exception as e:
             print(f"Error finding similar observations: {e}")
+            self.rollback_commit()
             return []
