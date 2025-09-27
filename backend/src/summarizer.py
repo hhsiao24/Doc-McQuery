@@ -32,23 +32,25 @@ def summarize_structured(abstract):
     prompt = f"""
 You are a medical data extractor.
 Extract patient info, conditions, symptoms, treatments, results, and diagnosis from the following abstract.
-Return the result as valid JSON in the following format where all variables return as a string: 
-
+For each field, you must always provide the **most specific information available in the text**, even if approximate or implied. 
+Do not leave any field empty. If the text is vague, use a best-guess paraphrase.
+Return the result as valid JSON in the following format where all variables return as a string:
 {{
     "patient": {{
-        "age": age,
-        "gender": gender
+        "age": "e.g. '68-year-old', 'adult', 'mean age 70', or best estimate based on text",
+        "gender": "male / female / mixed / not specified; use inferred information if not explicit"
     }},
     "situational_summary": [{{
-        "event": event, 
-        "characteristics": characteristics,
-        "onset": onset,
-        "outcome": outcome,
-        "history": history,
-        "treatment": treatment,
+        "event": "describe the main clinical case or event, e.g. 'presentation of chest pain with shortness of breath'",
+        "characteristics": "notable features of the patient or condition, including comorbidities, demographics, or risk factors",
+        "onset": "describe when/how the symptoms started, e.g. 'gradual onset over 2 weeks', 'acute onset after exertion'",
+        "outcome": "describe the result or current status, e.g. 'full recovery', 'improvement with treatment', 'death', 'unknown'",
+        "history": "summary of relevant medical history or past conditions, e.g. 'history of hypertension', 'no chronic conditions'",
+        "treatment": "describe treatments/interventions, e.g. 'insulin therapy', 'laparoscopic surgery', 'physical therapy'"
     }}],
-    "notes": notes,
+    "notes": "general context or additional observations relevant to the case, e.g. 'case study for a rare condition'"
 }}
+
 
 Abstract:
 \"\"\"{abstract}\"\"\"
@@ -89,19 +91,16 @@ def conditions_to_string(conditions):
     """
     if not conditions:
         return "No known conditions."
-
-    def conditions_to_string(conditions):
-        if not conditions:
-            return "No known conditions."
-        parts = []
-        for c in conditions:
-            s = c["code"]
-            if c.get("onset"):
-                s += f" (onset: {c['onset']})"
-            if c.get("abatement"):
-                s += f", resolved: {c['abatement']}"
-            parts.append(s)
-        return "; ".join(parts)
+    
+    parts = []
+    for c in conditions:
+        s = c["code"]
+        if c.get("onset"):
+            s += f" (onset: {c['onset']})"
+        if c.get("abatement"):
+            s += f", resolved: {c['abatement']}"
+        parts.append(s)
+    return "; ".join(parts)
 
 
 def observations_to_string(observations):
@@ -175,7 +174,6 @@ Patient past observations:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    # Parse JSON safely
     try:
         return json.loads(response.choices[0].message.content)
     except Exception:
@@ -190,12 +188,28 @@ Entrez.email = "your_email@example.com"
 def build_queries(patient):
     queries = []
 
-    conditions = patient.get("conditions", [])
-    symptoms = patient.get("symptoms", [])
-    treatments = patient.get("treatments", [])
-    demographics = patient.get("demographics", {})
+    # Parsed input (structured)
+    description = patient.get("parsed_input", {})
+    conditions = description.get("conditions", [])
+    symptoms = description.get("symptoms", [])
+    treatments = description.get("treatments", [])
+    demographics = description.get("demographics", {})
 
-    # Tier 1: conditions + symptoms + treatments + demographics
+    # EMR summary (unstructured -> convert to tokens)
+    emr_summary = patient.get("emr_summary", {})
+    emr_conditions_text = emr_summary.get("conditions_summary", "")
+    emr_symptoms_text = emr_summary.get("symptoms_and_observations_summary", "")
+
+    # crude keyword extraction (split on words/phrases, could replace w/ GPT/NLP)
+    emr_terms = []
+    if emr_conditions_text:
+        emr_terms.extend([f'"{phrase.strip()}"[All Fields]' 
+                          for phrase in emr_conditions_text.split(",") if phrase.strip()])
+    if emr_symptoms_text:
+        emr_terms.extend([f'"{phrase.strip()}"[All Fields]' 
+                          for phrase in emr_symptoms_text.split(",") if phrase.strip()])
+
+    # Tier 1: conditions + symptoms + treatments + demographics + EMR terms
     tier1_terms = []
     if conditions:
         tier1_terms.append(" OR ".join([f'"{c}"[MeSH Terms]' for c in conditions]))
@@ -210,6 +224,8 @@ def build_queries(patient):
         tier1_terms.append(f'"aged {lower}-{upper}"')
     if "sex" in demographics:
         tier1_terms.append(f'"{demographics["sex"]}"')
+    if emr_terms:
+        tier1_terms.append(" OR ".join(emr_terms))
     if tier1_terms:
         queries.append(" AND ".join(tier1_terms))
 
@@ -221,6 +237,8 @@ def build_queries(patient):
         tier2_terms.append(" OR ".join([f'"{s}"[All Fields]' for s in symptoms]))
     if treatments:
         tier2_terms.append(" OR ".join([f'"{t}"[All Fields]' for t in treatments]))
+    if emr_terms:
+        tier2_terms.append(" OR ".join(emr_terms))
     if tier2_terms:
         queries.append(" AND ".join(tier2_terms))
 
@@ -230,15 +248,19 @@ def build_queries(patient):
         tier3_terms.append(" OR ".join([f'"{c}"[MeSH Terms]' for c in conditions]))
     if symptoms:
         tier3_terms.append(" OR ".join([f'"{s}"[All Fields]' for s in symptoms]))
+    if emr_terms:
+        tier3_terms.append(" OR ".join(emr_terms))
     if tier3_terms:
         queries.append(" AND ".join(tier3_terms))
 
-    # Tier 4: conditions + only first 1 or 2 symptoms
+    # Tier 4: conditions + only first 1–2 symptoms + emr terms
     tier4_terms = []
     if conditions:
         tier4_terms.append(" OR ".join([f'"{c}"[MeSH Terms]' for c in conditions]))
     if symptoms:
         tier4_terms.append(" OR ".join([f'"{s}"[All Fields]' for s in symptoms[:2]]))
+    if emr_terms:
+        tier4_terms.append(" OR ".join(emr_terms))
     if tier4_terms:
         queries.append(" AND ".join(tier4_terms))
 
