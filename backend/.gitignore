@@ -3,5 +3,6 @@
 
 **/__pycache__/
 output/
+.env
 
 
