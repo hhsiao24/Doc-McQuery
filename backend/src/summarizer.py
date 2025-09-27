@@ -59,12 +59,13 @@ Abstract:
     )
     return response.choices[0].message.content
 
-
 # generates summaries based on pub med articles found from queries
 def get_structured_summaries(query, max_results=3):
     ids = search_pubmed(query, max_results=max_results)
     if not ids:
         return {"error": "No results found"}
+    
+    print("Got ids", ids, flush=True)
 
     print("Got ids", ids, flush=True)
 
@@ -81,7 +82,6 @@ def get_structured_summaries(query, max_results=3):
 
         results.append({"pubmed_id": pid, "summary": structured_json})
     return results
-
 
 def conditions_to_string(conditions):
     """
@@ -184,7 +184,6 @@ Patient past observations:
 
 # building the queries to parse pubmed
 Entrez.email = "your_email@example.com"
-
 
 # MeSH = Medical Subject Headings -> Searching with [MeSH Terms] means PubMed will look for articles specifically tagged with that subject heading
 # [All Fields] tells PubMed to search for the term anywhere in the record: title, abstract, keywords, authors, etc

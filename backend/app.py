@@ -55,8 +55,7 @@ def parse_user_input(raw_input):
         return parsed
     except Exception as e:
         return {"error": str(e)}
-
-
+      
 @app.route("/all_requests", methods=["POST"])
 def all_requests():
     """
@@ -96,14 +95,20 @@ def parse_input(raw_input: str):
 @app.route("/summarize", methods=["POST"])
 def summarize():
     data = request.json
-    query = data.get("query")
+    patient_id = data.get("patient_id")
+    patient_info = data.get("patient_info")
 
-    if not query:
-        return jsonify({"error": "Query parameter is required"}), 400
+    patient_info = parse_input(patient_info)
 
-    results = get_structured_summaries(query, max_results=3)
-    return jsonify(results)
+    # add valerias data
 
+    # ritika's stuff
+    
+    case_study = search_patient(patient_info)
+
+    return jsonify({
+        "case_study": case_study
+    })
 
 # @app.route("/search-patient", methods=["POST"])
 # def search_patient_request():
@@ -249,7 +254,6 @@ def patient_summary(patient_id):
             "summary": summary
         }
     )
-
 
 @app.route("/health")
 def hello():
