@@ -1,0 +1,46 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: always
+    environment:
+      POSTGRES_DB: data
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5432:5432
+    volumes:
+      - ./db/:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username -d data"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+
+  backend:
+    build: ./backend/
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./backend/:/usr/src/app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: app.py
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: "username"
+      DB_PASSWORD: "password"
+      DB_NAME: "data"
+
+  frontend:
+    build: ./frontend/
+    volumes:
+      - ./frontend/:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 5173:5173
+    depends_on:
+      - backend

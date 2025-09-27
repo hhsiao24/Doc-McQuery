@@ -1,0 +1,7 @@
+# Virtual environment
+**/.venv/
+
+**/__pycache__/
+output/
+
+
