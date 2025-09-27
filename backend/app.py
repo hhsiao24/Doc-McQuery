@@ -61,10 +61,33 @@ def parse_user_input(raw_input):
     except Exception as e:
         return {"error": str(e)}
     
+@app.route("/all_requests", methods=["POST"])
+def all_requests():
+    """
+    Main request to get all data
+    """
+    data = request.json
+    patient_id = data.get("patient_id")
+    patient_info = data.get("patient_info")
+
+    patient_info = parse_input(patient_info)
+
+    # add valerias data
+
+    # ritika's stuff
+    
+    case_study = search_patient(patient_info)
+
+    return jsonify({
+        "case_study": case_study
+    })
+
+    
 @app.route("/parse_input", methods=["POST"])
-def parse_input():
+def parse_input_route():
     data = request.json
     raw_input = data.get("input")
+    return parse_input(raw_input)
 
 
 @app.route("/all_requests", methods=["POST"])
