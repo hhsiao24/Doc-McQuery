@@ -1,4 +1,9 @@
 # app.py
+from dotenv import load_dotenv
+
+from flask import Flask, request, jsonify
+from openai import OpenAI
+
 import json
 import os
 
@@ -55,6 +60,11 @@ def parse_user_input(raw_input):
         return parsed
     except Exception as e:
         return {"error": str(e)}
+    
+@app.route("/parse_input", methods=["POST"])
+def parse_input():
+    data = request.json
+    raw_input = data.get("input")
 
 
 @app.route("/all_requests", methods=["POST"])

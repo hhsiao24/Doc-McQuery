@@ -65,6 +65,8 @@ def get_structured_summaries(query, max_results=3):
     ids = search_pubmed(query, max_results=max_results)
     if not ids:
         return {"error": "No results found"}
+    
+    print("Got ids", ids, flush=True)
 
     print("Got ids", ids, flush=True)
 
