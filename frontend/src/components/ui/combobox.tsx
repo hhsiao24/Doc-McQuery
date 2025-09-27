@@ -17,9 +17,15 @@ export interface ComboBoxProps {
   options: ComboBoxOption[];
   onSelect: (v: ComboBoxOption | null) => any;
   placeholder?: string;
+  disabled?: boolean;
 }
 
-export const ComboBox = ({ options, onSelect, placeholder }: ComboBoxProps) => {
+export const ComboBox = ({
+  options,
+  onSelect,
+  placeholder,
+  disabled = false,
+}: ComboBoxProps) => {
   const [open, setOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const selected = options.find((opt) => opt.value === selectedValue);
@@ -32,6 +38,7 @@ export const ComboBox = ({ options, onSelect, placeholder }: ComboBoxProps) => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          disabled={disabled}
           variant="outline"
           role="combobox"
           aria-expanded={open}

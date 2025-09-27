@@ -1,17 +1,25 @@
 import { cn } from "@/lib/utils";
 import { Text } from "./text";
+import { useNavigate } from "react-router";
 
 interface LogoProps {
   large?: boolean;
 }
 
 export const Logo = ({ large = false }: LogoProps) => {
+  const nav = useNavigate();
+
+  const handleToHome = () => {
+    nav("/");
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-row items-center gap-4",
+        "flex flex-row items-center gap-4 cursor-pointer",
         large ? "h-48" : "h-32",
       )}
+      onClick={handleToHome}
     >
       <img
         src="/DocMcQueryTransparent.png"
