@@ -1,3 +1,4 @@
 db/
 initdb/
 **/.DS_Store
+**/.vscode

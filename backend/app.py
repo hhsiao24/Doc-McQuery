@@ -8,6 +8,7 @@ import os
 from datetime import date
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from openai import OpenAI
 
 from .src.db import Database
@@ -21,6 +22,7 @@ from .src.summarizer import (
 )
 
 app = Flask(__name__)
+CORS(app)
 
 db = Database()
 connection = db.get_connection()
@@ -74,13 +76,18 @@ def all_requests():
 
     # Step 3: fetch similar patients
     similar_patients = find_similar_emr(patient_id, patient_info, db)
+    similar_patients_list = []
+    for key, value in similar_patients.items():
+        similar_patients_list.append({"id": key, "summary": value})
 
     # Step 4: combine parsed input and summary into one query context
     combined_info = {"parsed_input": parsed_info, "emr_summary": summary_info}
 
     case_study = search_patient(combined_info)
 
-    return jsonify({"case_study": case_study, "similar_patients": similar_patients})
+    return jsonify(
+        {"case_study": case_study, "similar_patients": similar_patients_list}
+    )
 
 
 @app.route("/parse_input", methods=["POST"])
@@ -141,17 +148,17 @@ def search_patient(patient):
     # Step 2 — Call OpenAI for the first tier with results to summarize
     summaries = []
     for pubmed_id in ids:
-        abstract = fetch_abstract(pubmed_id)
+        name, abstract = fetch_abstract(pubmed_id)
         structured_summary = summarize_structured(abstract)
         try:
             structured_json = json.loads(structured_summary)
         except Exception:
             structured_json = {"raw_summary": structured_summary}
-        summaries.append({"pubmed_id": pubmed_id, "summary": structured_json})
+        summaries.append(
+            {"name": name, "pubmed_id": pubmed_id, "summary": structured_json}
+        )
 
-    results = {
-        f"Tier {tier_with_results}": {"query": first_query, "summaries": summaries}
-    }
+    results = {"query": first_query, "summaries": summaries}
 
     return {"patient": patient, "results": results}
 

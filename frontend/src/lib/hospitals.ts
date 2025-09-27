@@ -1,1 +1,3 @@
-export const hospitals = [{ label: "Grady Memorial Hospital", value: "grady" }];
+export const hospitals = [
+  { label: "Doc McFlurry Hospital", value: "mcflurry" },
+];
