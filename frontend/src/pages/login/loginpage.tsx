@@ -3,15 +3,15 @@ import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/logo";
 import { hospitals } from "@/lib/hospitals";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEventHandler } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
-export const Loginpage = () => {
+export const LoginPage = () => {
   const params = useParams();
   const nav = useNavigate();
   const [hospital, setHospital] = useState("");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
@@ -28,14 +28,16 @@ export const Loginpage = () => {
     }
   }, [params.h]);
 
-  const checkLogin = () => {
-    if (!username || !password) {
+  const checkLogin: FormEventHandler = (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
       toast.error("Please enter both your username and password");
     } else {
       if (password !== "query") {
         toast.error("Incorrect password. Please try again.");
       } else {
-        nav("/search");
+        nav(`/search?h=${params.h}`);
       }
     }
   };
@@ -59,18 +61,21 @@ export const Loginpage = () => {
           <Button className="w-full p-6 bg-[#3B3D3F] text-white text-lg hover:bg-[#3B3D3F]">
             {hospital}
           </Button>
-          <div className="w-sm flex flex-col items-center justify-around py-8 gap-4">
-            <div className="w-full">
-              <label htmlFor="login-username">Username</label>
+          <form
+            onSubmit={checkLogin}
+            className="w-sm flex flex-col items-center justify-around py-6 gap-6"
+          >
+            <div className="w-full flex flex-col gap-2">
+              <label htmlFor="login-email">Email</label>
               <Input
-                id="login-username"
-                name="username"
+                id="login-email"
+                name="email"
                 type="email"
-                onChange={(v) => setUsername(v.target.value)}
-                value={username}
+                onChange={(v) => setEmail(v.target.value)}
+                value={email}
               />
             </div>
-            <div className="w-full">
+            <div className="w-full flex flex-col gap-2">
               <label htmlFor="login-username">Password</label>
               <Input
                 id="login-password"
@@ -80,8 +85,8 @@ export const Loginpage = () => {
                 value={password}
               />
             </div>
-            <Button onClick={checkLogin}>Login</Button>
-          </div>
+            <Button type="submit">Login</Button>
+          </form>
         </div>
       </div>
     </div>
