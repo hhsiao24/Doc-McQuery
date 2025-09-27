@@ -1,25 +1,20 @@
 # app.py
 from dotenv import load_dotenv
 
-from flask import Flask, request, jsonify
-from openai import OpenAI
+load_dotenv()
 
 import json
 import os
+from datetime import date
 
-from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from openai import OpenAI
 
-load_dotenv()
-
-from datetime import date
-
 from .src.db import Database
+from .src.similar_patients import find_similar_emr
 from .src.summarizer import (
     build_queries,
     fetch_abstract,
-    get_structured_summaries,
     search_pubmed,
     summarize_patient_info,
     summarize_structured,
@@ -60,7 +55,7 @@ def parse_user_input(raw_input):
         return parsed
     except Exception as e:
         return {"error": str(e)}
-    
+
 
 @app.route("/all_requests", methods=["POST"])
 def all_requests():
@@ -74,21 +69,18 @@ def all_requests():
     parsed_info = parse_input(patient_info)
 
     # Step 2: fetch patient EMR from DB and summarize EMR
-    patient_records = get_patient_records(patient_id)  
+    patient_records = get_patient_records(patient_id)
     summary_info = summarize_patient_info(patient_records)
 
+    # Step 3: fetch similar patients
+    similar_patients = find_similar_emr(patient_id, patient_info, db)
+
     # Step 4: combine parsed input and summary into one query context
-    combined_info = {
-        "parsed_input": parsed_info,
-        "emr_summary": summary_info
-    }
+    combined_info = {"parsed_input": parsed_info, "emr_summary": summary_info}
 
     case_study = search_patient(combined_info)
 
-    print(case_study)
-    print(type(case_study), flush=True)
-
-    return jsonify({"case_study": case_study})
+    return jsonify({"case_study": case_study, "similar_patients": similar_patients})
 
 
 @app.route("/parse_input", methods=["POST"])
@@ -146,7 +138,7 @@ def search_patient(patient):
     if not tier_with_results:
         return jsonify({"error": "No results found"}), 404
 
-    # Step 2 — Call OpenAI for the first tier with results to summarize 
+    # Step 2 — Call OpenAI for the first tier with results to summarize
     summaries = []
     for pubmed_id in ids:
         abstract = fetch_abstract(pubmed_id)
@@ -238,7 +230,8 @@ def get_patient_records(patient_id, first_name=None, last_name=None):
         "observations": observations_list,
     }
 
-def patient_summary(patient_id, first_name = None, last_name = None):
+
+def patient_summary(patient_id, first_name=None, last_name=None):
     records = get_patient_records(patient_id, first_name, last_name)
     if not records:
         return jsonify({"error": "Patient not found"}), 404
@@ -252,6 +245,7 @@ def patient_summary(patient_id, first_name = None, last_name = None):
         }
     )
 
+
 # --------------------------
 # Route to get all patients for dropdown
 # --------------------------
@@ -259,21 +253,21 @@ def patient_summary(patient_id, first_name = None, last_name = None):
 def patients_list():
     cursor = connection.cursor()
     try:
-        cursor.execute("SELECT id, first_name, last_name FROM patients ORDER BY last_name, first_name;")
+        cursor.execute(
+            "SELECT id, first_name, last_name FROM patients ORDER BY last_name, first_name;"
+        )
         rows = cursor.fetchall()
 
         patients = [
-            {
-                "id": str(row[0]),
-                "first_name": str(row[1]),
-                "last_name": str(row[2])
-            } for row in rows
+            {"id": str(row[0]), "first_name": str(row[1]), "last_name": str(row[2])}
+            for row in rows
         ]
 
         return jsonify(patients)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/health")
 def hello():
