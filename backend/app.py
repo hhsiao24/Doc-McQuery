@@ -239,12 +239,7 @@ def get_patient_records(patient_id, first_name=None, last_name=None):
         "observations": observations_list,
     }
 
-
-@app.route("/patient_summary/<patient_id>", methods=["GET"])
-def patient_summary(patient_id):
-    first_name = request.args.get("first_name")
-    last_name = request.args.get("last_name")
-
+def patient_summary(patient_id, first_name = None, last_name = None):
     records = get_patient_records(patient_id, first_name, last_name)
     if not records:
         return jsonify({"error": "Patient not found"}), 404
@@ -257,6 +252,7 @@ def patient_summary(patient_id):
             "summary": summary
         }
     )
+
 # --------------------------
 # Route to get all patients for dropdown
 # --------------------------

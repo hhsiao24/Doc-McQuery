@@ -265,3 +265,5 @@ def build_queries(patient):
         queries.append(" AND ".join(tier4_terms))
 
     return queries
+
+
