@@ -118,6 +118,7 @@ def summarize():
     return jsonify(results)
 
 
+
 # use inputs to generate a query and call methods to create the summary
 def search_patient(patient):
     if not patient:

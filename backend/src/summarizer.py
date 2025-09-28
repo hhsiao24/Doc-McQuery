@@ -101,7 +101,6 @@ def conditions_to_string(conditions):
     """
     if not conditions:
         return "No known conditions."
-
     parts = []
     for c in conditions:
         s = c["code"]
@@ -230,6 +229,7 @@ def build_queries(patient):
             ]
         )
 
+
     # Tier 1: conditions + symptoms + treatments + demographics + EMR terms
     tier1_terms = []
     if conditions:
@@ -286,3 +286,5 @@ def build_queries(patient):
         queries.append(" AND ".join(tier4_terms))
 
     return queries
+
+
