@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useSearchParams } from "react-router";
 import { Logo } from "../ui/logo";
 import { hospitals } from "@/lib/hospitals";
 import { CircleUserRound, LogOut } from "lucide-react";
+import { Toaster } from "sonner";
 
 export const WithHeader = () => {
   const [searchParams] = useSearchParams();
@@ -36,6 +37,7 @@ export const WithHeader = () => {
         </div>
       </div>
       <Outlet />
+      <Toaster richColors />
     </div>
   );
 };
