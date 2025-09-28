@@ -156,12 +156,12 @@ export const SearchPage = () => {
               Case Studies
             </Text>
             <div className="bg-[#292B2D] m-4 p-4 shadow-lg rounded-lg flex flex-col gap-4">
-              {caseStudies ? (
+              {caseStudies.length > 0 ? (
                 caseStudies.map((caseStudy) => (
                   <CaseStudyCard caseStudy={caseStudy} />
                 ))
               ) : (
-                <Text>No case studies found!</Text>
+                <Text>No related case studies found!</Text>
               )}
             </div>
           </div>
@@ -170,7 +170,7 @@ export const SearchPage = () => {
               Similar Patients
             </Text>
             <div className="bg-[#292B2D] m-4 p-4 shadow-lg rounded-lg flex flex-col gap-4">
-              {similarPatients ? (
+              {similarPatients.length > 0 ? (
                 similarPatients?.map((patient) => (
                   <PatientCard patient={patient} />
                 ))
