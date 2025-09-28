@@ -13,6 +13,11 @@ def search_pubmed(query, max_results=3):
     search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {"db": "pubmed", "term": query, "retmax": max_results, "retmode": "json"}
     search_resp = requests.get(search_url, params=params).json()
+
+    if "esearchresult" not in search_resp:
+        # No studies found
+        return []
+
     return search_resp["esearchresult"].get("idlist", [])
 
 
@@ -20,12 +25,15 @@ def fetch_abstract(pubmed_id):
     efetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
     params = {"db": "pubmed", "id": pubmed_id, "retmode": "xml"}
     resp = requests.get(efetch_url, params=params)
-    print(resp.text, flush=True)
+    resp.encoding = "utf-8"
     root = ET.fromstring(resp.text)
-    abstract = ""
-    for elem in root.iter("AbstractText"):
-        abstract += (elem.text or "") + " "
-    return abstract.strip()
+    name = " ".join("".join(elem.itertext()) for elem in root.iter("ArticleTitle"))
+    abstract = " ".join("".join(elem.itertext()) for elem in root.iter("AbstractText"))
+
+    if not abstract.strip():
+        abstract = "No abstract available."
+
+    return name.strip(), abstract.strip()
 
 
 def summarize_structured(abstract):
@@ -61,12 +69,13 @@ Abstract:
     )
     return response.choices[0].message.content
 
+
 # generates summaries based on pub med articles found from queries
 def get_structured_summaries(query, max_results=3):
     ids = search_pubmed(query, max_results=max_results)
     if not ids:
         return {"error": "No results found"}
-    
+
     print("Got ids", ids, flush=True)
 
     print("Got ids", ids, flush=True)
@@ -85,13 +94,13 @@ def get_structured_summaries(query, max_results=3):
         results.append({"pubmed_id": pid, "summary": structured_json})
     return results
 
+
 def conditions_to_string(conditions):
     """
     Convert a list of condition dicts into a readable string.
     """
     if not conditions:
         return "No known conditions."
-    
     parts = []
     for c in conditions:
         s = c["code"]
@@ -183,6 +192,7 @@ Patient past observations:
 # building the queries to parse pubmed
 Entrez.email = "your_email@example.com"
 
+
 # MeSH = Medical Subject Headings -> Searching with [MeSH Terms] means PubMed will look for articles specifically tagged with that subject heading
 # [All Fields] tells PubMed to search for the term anywhere in the record: title, abstract, keywords, authors, etc
 def build_queries(patient):
@@ -203,11 +213,22 @@ def build_queries(patient):
     # crude keyword extraction (split on words/phrases, could replace w/ GPT/NLP)
     emr_terms = []
     if emr_conditions_text:
-        emr_terms.extend([f'"{phrase.strip()}"[All Fields]' 
-                          for phrase in emr_conditions_text.split(",") if phrase.strip()])
+        emr_terms.extend(
+            [
+                f'"{phrase.strip()}"[All Fields]'
+                for phrase in emr_conditions_text.split(",")
+                if phrase.strip()
+            ]
+        )
     if emr_symptoms_text:
-        emr_terms.extend([f'"{phrase.strip()}"[All Fields]' 
-                          for phrase in emr_symptoms_text.split(",") if phrase.strip()])
+        emr_terms.extend(
+            [
+                f'"{phrase.strip()}"[All Fields]'
+                for phrase in emr_symptoms_text.split(",")
+                if phrase.strip()
+            ]
+        )
+
 
     # Tier 1: conditions + symptoms + treatments + demographics + EMR terms
     tier1_terms = []
