@@ -118,7 +118,6 @@ def summarize():
     return jsonify(results)
 
 
-
 # use inputs to generate a query and call methods to create the summary
 def search_patient(patient):
     if not patient:
@@ -144,7 +143,7 @@ def search_patient(patient):
             break  # Stop at first tier with results
 
     if not tier_with_results:
-        return jsonify({"error": "No results found"}), 404
+        return {"patient": patient, "results": {"query": "", "summaries": []}}
 
     # Step 2 — Call OpenAI for the first tier with results to summarize
     summaries = []
